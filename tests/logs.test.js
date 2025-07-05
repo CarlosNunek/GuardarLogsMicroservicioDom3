@@ -1,47 +1,44 @@
-const request = require('supertest');
-const { createClient } = require('redis');
-const app = require('../app'); // asegúrate que app.js exporta tu instancia de Express
+const { manejarEvento } = require('../controllers/logController');
 
-let redis;
+jest.mock('../config/redisClient', () => ({
+  hSet: jest.fn(() => Promise.resolve('OK'))
+}));
 
-describe('Test del microservicio de logs (Redis oficial)', () => {
+const mockRedis = require('../config/redisClient');
 
-  beforeAll(async () => {
-    redis = createClient({
-      url: 'redis://localhost:6379' // puedes cambiarlo por process.env.REDIS_URL si usas .env
-    });
-
-    redis.on('error', (err) => console.error('Redis Client Error', err));
-
-    await redis.connect();
-    await redis.flushAll(); // limpia la base Redis antes de las pruebas
-  });
-
-  afterAll(async () => {
-    await redis.quit(); // cierra conexión con Redis
-  });
-
-  it('POST /api/logs debería guardar el evento en Redis', async () => {
-    const fakeLog = {
-      servicio: "moderador_mensajes",
-      tipo: "INFO",
-      mensaje: "Mensaje moderado con éxito",
-      fecha: new Date().toISOString()
+describe('Test logController con Redis mockeado', () => {
+  it('Debería llamar a guardarLog con evento válido', async () => {
+    const evento = {
+      tipo: 'mensaje_enviado',
+      de: 'usuario1',
+      para: 'usuario2',
+      contenido: 'Hola',
+      estado: 'entregado'
     };
 
-    const res = await request(app)
-      .post('/api/logs')
-      .send(fakeLog);
+    await manejarEvento(JSON.stringify(evento));
 
-    expect(res.statusCode).toBe(201);
-
-    // Validar que Redis tiene el log
-    const logs = await redis.lRange('logs', 0, -1); // obtiene todos los logs de la lista
-    expect(logs.length).toBeGreaterThan(0);
-
-    const parsedLog = JSON.parse(logs[0]);
-    expect(parsedLog.servicio).toBe('moderador_mensajes');
-    expect(parsedLog.tipo).toBe('INFO');
+    expect(mockRedis.hSet).toHaveBeenCalledTimes(1);
+    const [[key, value]] = mockRedis.hSet.mock.calls[0];
+    expect(key).toMatch(/^log:/);
+    expect(value.remitente).toBe('usuario1');
+    expect(value.destinatario).toBe('usuario2');
+    expect(value.contenido).toBe('Hola');
+    expect(value.estado).toBe('entregado');
+    expect(value.timestamp).toBeDefined();
   });
 
+  it('No debería guardar si el evento no es tipo "mensaje_enviado"', async () => {
+    const evento = {
+      tipo: 'otro_tipo',
+      de: 'usuario1',
+      para: 'usuario2',
+      contenido: 'Ignorar'
+    };
+
+    await manejarEvento(JSON.stringify(evento));
+
+    expect(mockRedis.hSet).not.toHaveBeenCalled();
+  });
 });
+
