@@ -1,22 +1,24 @@
 const { manejarEvento } = require('../controllers/logController');
 
-// Mock del cliente Redis
+// ✅ Mock manual directo del módulo completo sin modificar archivos
 jest.mock('../config/redisClient', () => {
+  const hSet = jest.fn();
   return {
-    hSet: jest.fn((key, value) => {
-      return Promise.resolve(`MOCK GUARDADO EN ${key}`);
-    })
+    __esModule: true, // soporta tanto default como named exports
+    default: { hSet },
+    hSet,
   };
 });
 
+// Importamos después del mock
 const mockRedis = require('../config/redisClient');
 
-describe('Test logController con Redis mockeado', () => {
+describe('🧪 Test logController con Redis mockeado', () => {
   beforeEach(() => {
     mockRedis.hSet.mockClear();
   });
 
-  it('Debería llamar a guardarLog con evento válido', async () => {
+  it('✅ Debería llamar a guardarLog con evento válido', async () => {
     const evento = {
       tipo: 'mensaje_enviado',
       de: 'usuario1',
@@ -28,15 +30,12 @@ describe('Test logController con Redis mockeado', () => {
     await manejarEvento(JSON.stringify(evento));
 
     expect(mockRedis.hSet).toHaveBeenCalledTimes(1);
-
     const [[key, value]] = mockRedis.hSet.mock.calls[0];
 
-    // Imprime lo que recibió para verificar exactamente qué hay
-    console.log('KEY RECIBIDO:', key);
+    console.log('🧪 KEY REAL:', key); // para ver el resultado exacto
 
-    // Validaciones
     expect(typeof key).toBe('string');
-    expect(key.includes('log')).toBe(true);
+    expect(key.startsWith('log:')).toBe(true);
 
     expect(value.remitente).toBe('usuario1');
     expect(value.destinatario).toBe('usuario2');
@@ -45,7 +44,7 @@ describe('Test logController con Redis mockeado', () => {
     expect(value.timestamp).toBeDefined();
   });
 
-  it('No debería guardar si el evento no es tipo "mensaje_enviado"', async () => {
+  it('❌ No debería guardar si el evento no es tipo "mensaje_enviado"', async () => {
     const evento = {
       tipo: 'otro_tipo',
       de: 'usuario1',
