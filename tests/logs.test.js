@@ -1,16 +1,15 @@
-let mockClient;
+// ✅ mock directo en el require (sin variables fuera de scope, sin confusiones)
+jest.mock('../config/redisClient', () => ({
+  hSet: jest.fn()
+}));
 
-jest.mock('../config/redisClient', () => {
-  const hSet = jest.fn();
-  mockClient = { hSet }; // Este será el objeto simulado que se exporta como "client"
-  return mockClient;
-});
-
+// ✅ importar después del mock
 const { manejarEvento } = require('../controllers/logController');
+const redisClient = require('../config/redisClient'); // este es el mock real
 
 describe('🧪 Test logController con Redis mockeado', () => {
   beforeEach(() => {
-    mockClient.hSet.mockClear();
+    redisClient.hSet.mockClear();
   });
 
   it('✅ Debería llamar a guardarLog con evento válido', async () => {
@@ -24,11 +23,12 @@ describe('🧪 Test logController con Redis mockeado', () => {
 
     await manejarEvento(JSON.stringify(evento));
 
-    expect(mockClient.hSet).toHaveBeenCalledTimes(1);
-    const [[key, value]] = mockClient.hSet.mock.calls[0];
+    expect(redisClient.hSet).toHaveBeenCalledTimes(1);
 
-    console.log('🧪 KEY REAL:', key); // Esto ahora sí debe ser algo como log:...
+    const [[key, value]] = redisClient.hSet.mock.calls[0];
+    console.log('🧪 KEY REAL:', key);
 
+    // ✅ finalmente validamos
     expect(typeof key).toBe('string');
     expect(key.startsWith('log:')).toBe(true);
 
@@ -48,6 +48,6 @@ describe('🧪 Test logController con Redis mockeado', () => {
     };
 
     await manejarEvento(JSON.stringify(evento));
-    expect(mockClient.hSet).not.toHaveBeenCalled();
+    expect(redisClient.hSet).not.toHaveBeenCalled();
   });
 });
