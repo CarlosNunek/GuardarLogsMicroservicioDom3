@@ -1,8 +1,14 @@
-import json from "@eslint/json";
-import { defineConfig } from "eslint/config";
+const json = require("@eslint/json");
 
-
-export default defineConfig([
-  { ignores: ["**/*.js", "**/*.cjs", "**/*.mjs"] },
-  { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
-]);
+/** @type {import("eslint").Linter.FlatConfig[]} */
+module.exports = [
+  {
+    files: ["**/*.json"],
+    plugins: {
+      json,
+    },
+    languageOptions: {
+      parser: json.parser,
+    },
+  },
+];
