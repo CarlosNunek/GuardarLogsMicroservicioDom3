@@ -1,12 +1,20 @@
 const { manejarEvento } = require('../controllers/logController');
 
-jest.mock('../config/redisClient', () => ({
-  hSet: jest.fn(() => Promise.resolve('OK'))
-}));
+jest.mock('../config/redisClient', () => {
+  return {
+    hSet: jest.fn((key, value) => {
+      return Promise.resolve(`MOCK GUARDADO EN ${key}`);
+    })
+  };
+});
 
 const mockRedis = require('../config/redisClient');
 
 describe('Test logController con Redis mockeado', () => {
+  beforeEach(() => {
+    mockRedis.hSet.mockClear();
+  });
+
   it('Debería llamar a guardarLog con evento válido', async () => {
     const evento = {
       tipo: 'mensaje_enviado',
@@ -20,7 +28,7 @@ describe('Test logController con Redis mockeado', () => {
 
     expect(mockRedis.hSet).toHaveBeenCalledTimes(1);
     const [[key, value]] = mockRedis.hSet.mock.calls[0];
-    expect(key).toMatch(/^log:/);
+    expect(key.startsWith('log:')).toBe(true);
     expect(value.remitente).toBe('usuario1');
     expect(value.destinatario).toBe('usuario2');
     expect(value.contenido).toBe('Hola');
@@ -41,4 +49,3 @@ describe('Test logController con Redis mockeado', () => {
     expect(mockRedis.hSet).not.toHaveBeenCalled();
   });
 });
-
