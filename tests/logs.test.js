@@ -1,11 +1,13 @@
-// ✅ mock directo en el require (sin variables fuera de scope, sin confusiones)
-jest.mock('../config/redisClient', () => ({
-  hSet: jest.fn()
-}));
+// 🧠 Este bloque simula el export original del cliente Redis
+jest.mock('../config/redisClient', () => {
+  return {
+    hSet: jest.fn()
+  };
+});
 
-// ✅ importar después del mock
+// 👇 Importamos después del mock
+const redisClient = require('../config/redisClient');
 const { manejarEvento } = require('../controllers/logController');
-const redisClient = require('../config/redisClient'); // este es el mock real
 
 describe('🧪 Test logController con Redis mockeado', () => {
   beforeEach(() => {
