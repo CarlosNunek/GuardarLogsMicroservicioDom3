@@ -1,21 +1,18 @@
 const { manejarEvento } = require('../controllers/logController');
 
-// ✅ Mock manual directo del módulo completo sin modificar archivos
+// 👇 Aquí hacemos el mock manualmente y exportamos el nombre `client` como se usa en tu código
+const hSetMock = jest.fn();
 jest.mock('../config/redisClient', () => {
-  const hSet = jest.fn();
   return {
-    __esModule: true, // soporta tanto default como named exports
-    default: { hSet },
-    hSet,
+    hSet: hSetMock
   };
 });
 
-// Importamos después del mock
 const mockRedis = require('../config/redisClient');
 
 describe('🧪 Test logController con Redis mockeado', () => {
   beforeEach(() => {
-    mockRedis.hSet.mockClear();
+    hSetMock.mockClear();
   });
 
   it('✅ Debería llamar a guardarLog con evento válido', async () => {
@@ -29,10 +26,10 @@ describe('🧪 Test logController con Redis mockeado', () => {
 
     await manejarEvento(JSON.stringify(evento));
 
-    expect(mockRedis.hSet).toHaveBeenCalledTimes(1);
-    const [[key, value]] = mockRedis.hSet.mock.calls[0];
+    expect(hSetMock).toHaveBeenCalledTimes(1);
 
-    console.log('🧪 KEY REAL:', key); // para ver el resultado exacto
+    const [[key, value]] = hSetMock.mock.calls[0];
+    console.log('🧪 KEY REAL:', key);
 
     expect(typeof key).toBe('string');
     expect(key.startsWith('log:')).toBe(true);
@@ -53,7 +50,6 @@ describe('🧪 Test logController con Redis mockeado', () => {
     };
 
     await manejarEvento(JSON.stringify(evento));
-
-    expect(mockRedis.hSet).not.toHaveBeenCalled();
+    expect(hSetMock).not.toHaveBeenCalled();
   });
 });
