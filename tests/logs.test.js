@@ -1,14 +1,15 @@
-const { manejarEvento } = require('../controllers/logController');
+let mockHSet;
 
-// ✅ Prefix "mock" habilita la variable dentro del jest.mock
-const mockHSet = jest.fn();
-
+// 👇 Primero va el mock
 jest.mock('../config/redisClient', () => {
+  mockHSet = jest.fn();
   return {
     hSet: mockHSet
   };
 });
 
+// 👇 Luego de definir el mock, importa el código a testear
+const { manejarEvento } = require('../controllers/logController');
 const mockRedis = require('../config/redisClient');
 
 describe('🧪 Test logController con Redis mockeado', () => {
@@ -28,8 +29,8 @@ describe('🧪 Test logController con Redis mockeado', () => {
     await manejarEvento(JSON.stringify(evento));
 
     expect(mockHSet).toHaveBeenCalledTimes(1);
-
     const [[key, value]] = mockHSet.mock.calls[0];
+
     console.log('🧪 KEY REAL:', key);
 
     expect(typeof key).toBe('string');
