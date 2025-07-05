@@ -1,0 +1,27 @@
+name: CI - GuardarLogs
+
+on:
+  push:
+    branches: [ dev ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar pruebas funcionales
+        run: npm test
+
+      - name: Ejecutar análisis estático (ESLint)
+        run: npm run lint
