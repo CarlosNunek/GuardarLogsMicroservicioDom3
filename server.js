@@ -14,5 +14,4 @@ const { manejarEvento } = require('./controllers/logController');
   await subscriber.subscribe(process.env.CHANNEL, (mensaje) => {
     manejarEvento(mensaje);
   });
-})();
-module.exports = app;
+});
