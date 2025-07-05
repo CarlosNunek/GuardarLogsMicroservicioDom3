@@ -1,10 +1,11 @@
 const { manejarEvento } = require('../controllers/logController');
 
-// 👇 Aquí hacemos el mock manualmente y exportamos el nombre `client` como se usa en tu código
-const hSetMock = jest.fn();
+// ✅ Prefix "mock" habilita la variable dentro del jest.mock
+const mockHSet = jest.fn();
+
 jest.mock('../config/redisClient', () => {
   return {
-    hSet: hSetMock
+    hSet: mockHSet
   };
 });
 
@@ -12,7 +13,7 @@ const mockRedis = require('../config/redisClient');
 
 describe('🧪 Test logController con Redis mockeado', () => {
   beforeEach(() => {
-    hSetMock.mockClear();
+    mockHSet.mockClear();
   });
 
   it('✅ Debería llamar a guardarLog con evento válido', async () => {
@@ -26,9 +27,9 @@ describe('🧪 Test logController con Redis mockeado', () => {
 
     await manejarEvento(JSON.stringify(evento));
 
-    expect(hSetMock).toHaveBeenCalledTimes(1);
+    expect(mockHSet).toHaveBeenCalledTimes(1);
 
-    const [[key, value]] = hSetMock.mock.calls[0];
+    const [[key, value]] = mockHSet.mock.calls[0];
     console.log('🧪 KEY REAL:', key);
 
     expect(typeof key).toBe('string');
@@ -50,6 +51,6 @@ describe('🧪 Test logController con Redis mockeado', () => {
     };
 
     await manejarEvento(JSON.stringify(evento));
-    expect(hSetMock).not.toHaveBeenCalled();
+    expect(mockHSet).not.toHaveBeenCalled();
   });
 });
